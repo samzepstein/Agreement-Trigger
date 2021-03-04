@@ -1,0 +1,25 @@
+trigger AgreementTrigger on echosign_dev1__SIGN_Agreement__c (after update) {
+    if(Trigger.isAfter && Trigger.isUpdate){
+        List<Id> oppIds = new List<Id>();
+        for(echosign_dev1__SIGN_Agreement__c agmt : Trigger.new){
+            echosign_dev1__SIGN_Agreement__c oldAgmt = Trigger.oldMap.get(agmt.Id);
+            if(oldAgmt.echosign_dev1__Status__c != agmt.echosign_dev1__Status__c && agmt.echosign_dev1__Status__c == 'Signed'){
+                if(agmt.echosign_dev1__Opportunity__c != Null){
+                    oppIds.add(agmt.echosign_dev1__Opportunity__c);
+                }
+                
+            }
+        }
+        
+        if(oppIds.size() > 0){
+            try{
+                QueueAcceptQuotes newJob = new QueueAcceptQuotes(oppIds);
+                Id jobId = System.enqueueJob(newJob);
+            }
+            catch(Exception err){
+                String errMsg = 'Problem Queueing Accept Quote Job for Opp Ids:\n'+err.getMessage()+'\n'+err.getStackTraceString();
+                Error_Log_Handler.errorHandler('Agreement', errMsg);
+            }
+        }
+    }
+}
