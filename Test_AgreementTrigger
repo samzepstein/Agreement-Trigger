@@ -1,0 +1,32 @@
+@isTest
+public class Test_AgreementTrigger {
+    public static testMethod void testAgmtTrigger(){
+        Account testAcct = new Account(Name='Test Account',Org_Id__c='Some Id');
+        insert testAcct;
+        
+        Opportunity testOpp = new Opportunity(Name='Test Opportunity',
+                                              CloseDate=System.today(),
+                                              StageName='Closing',
+                                              AccountId=testAcct.Id);
+        insert testOpp;
+        
+        SBQQ__Quote__c qte = new SBQQ__Quote__c(SBQQ__Opportunity2__c=testOpp.Id,
+                                                SBQQ__Account__c=testAcct.Id,
+                                                SBQQ__Primary__c  = True);
+        insert qte;
+        
+        echosign_dev1__SIGN_Agreement__c agmt = new echosign_dev1__SIGN_Agreement__c(echosign_dev1__Opportunity__c=testOpp.Id,
+                                                                                     echosign_dev1__Status__c='Draft');
+        insert agmt;
+        
+		Test.startTest();
+
+        agmt.echosign_dev1__Status__c = 'Signed';
+        update agmt;
+        
+        Test.stopTest();
+        
+        SBQQ__Quote__c newQte = [SELECT SBQQ__Status__c FROM SBQQ__Quote__c WHERE Id = :qte.Id LIMIT 1];
+		System.assertEquals('Accepted', newQte.SBQQ__Status__c);        
+    }
+}
